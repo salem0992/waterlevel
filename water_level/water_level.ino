@@ -51,10 +51,11 @@ void os_getDevEui (u1_t* buf) { }
 void os_getDevKey (u1_t* buf) { }
 
 static uint8_t *mydata;
+static int mydataSize;
 static osjob_t sendjob;
 // Schedule TX every this many seconds (might become longer due to duty
 // cycle limitations).
-const unsigned TX_INTERVAL = 20;
+const unsigned TX_INTERVAL = 30;
 
 // Pin mapping
 const lmic_pinmap lmic_pins = {
@@ -245,11 +246,13 @@ uint8_t * convertToArray(float number)
   //int length = sprintf(numberStr, "%4.2f \r\n", number); //bug in arduino when print float to string
 
   //trick from http://yaab-arduino.blogspot.com.au/2015/12/how-to-sprintf-float-with-arduino.html
-  int length = sprintf(numberStr, "%d.%02d", (int)number, (int)(number*100)%100);
-  Serial.print("length ");
-  Serial.println(length );
-  uint8_t *mydata = new uint8_t[ strlen(numberStr)];
-  for (int i = 0; i < strlen(numberStr); i++)
+  mydataSize = sprintf(numberStr, "%d", (int)number);
+
+  Serial.println(numberStr );
+//  Serial.print("length ");
+//  Serial.println(length );
+  uint8_t *mydata = new uint8_t[ mydataSize ];
+  for (int i = 0; i < mydataSize; i++)
   {
      mydata[i] = numberStr[i];
      //  print data to dverify
@@ -263,7 +266,7 @@ uint8_t * convertToArray(float number)
 void do_send(osjob_t* j){
     distance = getWaterLevel();
     Serial.println("distance");
-    Serial.println(distance);
+    Serial.println(distance);//CAREFUL: number is rounding to 2 decimal numbers
     mydata = convertToArray (distance);      
      
     // Check if there is not a current TX/RX job running
@@ -276,7 +279,7 @@ void do_send(osjob_t* j){
        // LMIC.FRAME[0] =
         //[1]++++++++
         
-        LMIC_setTxData2(1, mydata, sizeof(mydata)-1, 0);
+        LMIC_setTxData2(1, mydata, mydataSize, 0);
         Serial.print(F("Packet queued for freq: "));
         Serial.println(LMIC.freq);
     }
